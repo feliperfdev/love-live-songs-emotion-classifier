@@ -1,5 +1,5 @@
 # Estágio de construção
-FROM python:3.12 as builder
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN poetry config virtualenvs.create false \
     && poetry install --no-root --without dev
 
 # Estágio final
-FROM python:3.12
+FROM python:3.12-slim
 
 WORKDIR /app
 
