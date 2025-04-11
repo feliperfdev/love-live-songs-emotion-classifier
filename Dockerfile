@@ -12,22 +12,25 @@ COPY pyproject.toml poetry.lock ./
 
 # Instala dependências do projeto
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-root --without dev
+    && poetry install --no-root
 
 # Estágio final
 FROM python:3.12-slim
 
-WORKDIR /app
+WORKDIR ./love_live_songs_sentiment_classfier
+
+RUN pip install fastapi[standard]
 
 # Copia as dependências instaladas
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copia a aplicação
-COPY ./app ./app
+COPY ./love_live_songs_sentiment_classfier ./app
 
 # Porta da aplicação
 EXPOSE 8000
 
 # Comando de execução
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# CMD ["uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"]
+CMD ["fastapi", "run", "app/main.py", "--port", "80"]

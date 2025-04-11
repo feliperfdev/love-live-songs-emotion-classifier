@@ -15,12 +15,12 @@ async def main_route():
 async def classifySongSentiment(song: str):
   from sklearn.feature_extraction.text import TfidfVectorizer
 
-  with open('love_live_songs_sentiment_classfier\LL_songs_sentiment_classfier.pkl', 'rb') as f:
+  with open('./app/LL_songs_sentiment_classfier.pkl', 'rb') as f:
       model = pickle.load(f)
 
   df = pd.DataFrame({'title': [song]})
 
-  data = pd.read_csv('love_live_songs_sentiment_classfier\love_live_songs.csv')
+  data = pd.read_csv('./app/love_live_songs.csv')
 
   vectorizer = TfidfVectorizer(stop_words='english', max_features=1)
   vectorizer.fit_transform(data['title'])
@@ -29,4 +29,4 @@ async def classifySongSentiment(song: str):
 
   pred = model.predict(sentiment.reshape(1, -1))
 
-  return {"sentiment": 'EXCT' if pred[0] == 1 else 'NRM'}
+  return {"sentiment": 'EXCITING' if pred[0] == 1 else 'NORMAL'}
