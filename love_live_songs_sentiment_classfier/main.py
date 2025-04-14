@@ -1,32 +1,52 @@
 from fastapi import FastAPI  
 import pandas as pd
-
-import pickle
+import re
+from math import log
+from collections import defaultdict
 
 app = FastAPI()
 
+data = pd.read_csv('./app/love_live_songs.csv')
+model = pd.read_pickle('./app/LL_songs_sentiment_classfier.pkl')
+
+ENGLISH_STOP_WORDS = {
+     "a","about","above","across","after","afterwards","again","against","all","almost","alone","along","already","also","although","always","am","among","amongst","amoungst","amount","an","and","another","any","anyhow","anyone","anything","anyway","anywhere","are","around","as","at","back","be","became","because","become","becomes","becoming","been","before","beforehand","behind","being","below","beside","besides","between","beyond","bill","both","bottom","but","by","call","can","cannot","cant","co","con","could","couldnt","cry","de","describe","detail","do","done","down","due","during","each","eg","eight","either","eleven","else","elsewhere","empty","enough","etc","even","ever","every","everyone","everything","everywhere","except","few","fifteen","fifty","fill","find","fire","first","five","for","former","formerly","forty","found","four","from","front","full","further","get","give","go","had","has","hasnt","have","he","hence","her","here","hereafter","hereby","herein","hereupon","hers","herself","him","himself","his","how","however","hundred","i","ie","if","in","inc","indeed","interest","into","is","it","its","itself","keep","last","latter","latterly","least","less","ltd","made","many","may","me","meanwhile","might","mill","mine","more","moreover","most","mostly","move","much","must","my","myself","name","namely","neither","never","nevertheless","next","nine","no","nobody","none","noone","nor","not","nothing","now","nowhere","of","off","often","on","once","one","only","onto","or","other","others","otherwise","our","ours","ourselves","out","over","own","part","per","perhaps","please","put","rather","re","same","see","seem","seemed","seeming","seems","serious","several","she","should","show","side","since","sincere","six","sixty","so","some","somehow","someone","something","sometime","sometimes","somewhere","still","such","system","take","ten","than","that","the","their","them","themselves","then","thence","there","thereafter","thereby","therefore","therein","thereupon","these","they","thick","thin","third","this","those","though","three","through","throughout","thru","thus","to","together","too","top","toward","towards","twelve","twenty","two","un","under","until","up","upon","us","very","via","was","we","well","were","what","whatever","when","whence","whenever","where","whereafter","whereas","whereby","wherein","whereupon","wherever","whether","which","while","whither","who","whoever","whole","whom","whose","why","will","with","within","without","would","yet","you","your","yours","yourself","yourselves",
+}
+
+def preprocess_title(title: str) -> list:
+    title = title.lower()
+    tokens = re.findall(r'(?u)\b\w{2,}\b', title)
+    return [token for token in tokens if token not in ENGLISH_STOP_WORDS]
+
+all_tokens = []
+
+for title in data['title']:
+    all_tokens.extend(preprocess_title(title))
+
+token_counts = defaultdict(int)
+
+for token in all_tokens:
+    token_counts[token] += 1
+
+selected_word = max(token_counts, key=token_counts.get, default=None)
+
+total_docs = len(data)
+doc_freq = sum(1 for title in data['title'] if selected_word in preprocess_title(title))
+idf_value = log((total_docs + 1) / (doc_freq + 1)) + 1 if selected_word else 0
 
 @app.get("/") 
 async def main_route():     
   
   return {"message": "API Tested OK"}
 
-@app.post("/song") 
+@app.post("/song")
 async def classifySongSentiment(song: str):
-  from sklearn.feature_extraction.text import TfidfVectorizer
-
-  with open('./app/LL_songs_sentiment_classfier.pkl', 'rb') as f:
-      model = pickle.load(f)
-
-  df = pd.DataFrame({'title': [song]})
-
-  data = pd.read_csv('./app/love_live_songs.csv')
-
-  vectorizer = TfidfVectorizer(stop_words='english', max_features=1)
-  vectorizer.fit_transform(data['title'])
-
-  sentiment = vectorizer.transform(df['title'])
-
-  pred = model.predict(sentiment.reshape(1, -1))
-
-  return {"sentiment": 'EXCITING' if pred[0] == 1 else 'NORMAL'}
+    tokens = preprocess_title(song)
+    total_words = len(tokens)
+    
+    tf = tokens.count(selected_word) / total_words if total_words > 0 else 0
+    tfidf = tf * idf_value
+    
+    pred = model.predict([[tfidf]])
+    
+    return {"sentiment": 'EXCITING' if pred[0] == 1 else 'NORMAL'}
