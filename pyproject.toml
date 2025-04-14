@@ -10,6 +10,7 @@ python = "^3.12"
 fastapi = "^0.115.12"
 uvicorn = "^0.34.0"
 pandas = "^2.2.3"
+scikit-learn = "^1.6.1"
 
 [build-system]
 requires = ["poetry-core"]

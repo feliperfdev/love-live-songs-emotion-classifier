@@ -1,12 +1,58 @@
 from fastapi import FastAPI  
 import pandas as pd
+import numpy as np
 import re
 from math import log
 from collections import defaultdict
 
-app = FastAPI()
+description = """
+**LLClf API** was built for reasons of study in *Python* and *Machine Learning*.
+"""
+
+tags_metadata = [
+    {
+        "name": "Trained Songs",
+        "description": "Returns all songs used on the algorithm training",
+    },
+    {
+        "name": "Classifier",
+        "description": "Predict the song sentiment by it parsed name",
+    },
+]
+
+app = FastAPI(
+    openapi_tags=tags_metadata,
+    title='Love Live! Songs sentiment classifier API',
+    description=description,
+    version='1.0.1',
+    summary='Predict a LL franchise song sentiment by parsing it name!',
+    contact={
+        "name": "Felipe Ribeiro",
+        "url": "http://github.com/feliperfdev",
+        "email": "feliper.dev@gmail.com",
+    },
+    )
 
 data = pd.read_csv('./app/love_live_songs.csv')
+
+def durations_mean(track_durations: list[str]) -> str:
+    total_seconds = 0
+    for duration in track_durations:
+        if np.nan_to_num(duration) != 0.0:
+            minutes, seconds = map(int, str(np.nan_to_num(duration)).split(':'))
+            total_seconds += minutes * 60 + seconds
+
+    mean_seconds = total_seconds / len(track_durations)
+    mean_aproach = round(mean_seconds)
+
+    minutes = mean_aproach // 60
+    seconds = mean_aproach % 60
+
+    return f"{minutes}:{seconds:02d}"
+
+data['bpm'].fillna(data['bpm'].mean(), inplace=True)
+data['duration'].fillna(durations_mean(data['duration']), inplace=True)
+
 model = pd.read_pickle('./app/LL_songs_sentiment_classfier.pkl')
 
 ENGLISH_STOP_WORDS = {
@@ -39,7 +85,25 @@ async def main_route():
   
   return {"message": "API Tested OK"}
 
-@app.post("/song")
+@app.get("/trained", tags=['Trained Songs']) 
+async def trainedSongs():     
+
+  songs = []
+
+  for song in data.values:
+     s = {}
+     s['title'] = song[0]
+     s['album'] = song[1]
+     s['attribution'] = song[2]
+     s['members'] = song[3]
+     s['release_date'] = song[4]
+     s['bpm'] = song[5]
+     s['duration'] = song[6]
+     songs.append(s)
+
+  return {"songs": songs}
+
+@app.post("/song", tags=['Classifier'])
 async def classifySongSentiment(song: str):
     tokens = preprocess_title(song)
     total_words = len(tokens)

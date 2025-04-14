@@ -11,6 +11,7 @@ O algoritmo desenvolvido está disponível [**neste repositório**](https://gith
 Tecnologias e modelos utilizados:
 
 - Python 3.12
+- Poetry para gerenciamento de dependências
 - NLTK para tokenização e análise de sentimentos
 - Algoritmo de Regressão Logística ([Logistic Regression - Sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html))
 - FastAPI e Uvicorn para desenvolvimento da API
@@ -50,6 +51,30 @@ Resposta
 ```json
 {
   "sentiment": "EXCITING | NORMAL"
+}
+```
+
+3. [GET] Músicas utilizadas no treinamento
+
+```sh
+http://localhost/trained
+```
+
+Resposta
+
+```json
+{
+  "songs": [
+    {
+      "title": "Heartbeat Runners",
+      "album": "TOKIMEKI Runners",
+      "attribution": "Nijigasaki (9 Members)",
+      "members": "Ayumu Uehara, Kasumi Nakasu, Shizuku Osaka, Karin Asaka, Ai Miyashita, Kanata Konoe, Setsuna Yuki, Emma Verde, Rina Tennoji",
+      "release_date": "2018.11.21",
+      "bpm": 180.0,
+      "duration": "4:36"
+    }
+  ]
 }
 ```
 
